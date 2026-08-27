@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       // Respuesta para que WhatsApp pase a la pantalla final
       responseData = {
         version: "3.0",
-        screen: "PANTALLA_DE_EXITO", // MODIFICAR: Coloca el ID de tu pantalla final de Flows
+        screen: "Qualified", // MODIFICAR: Coloca el ID de tu pantalla final de Flows
         data: { success: true }
       };
     }
