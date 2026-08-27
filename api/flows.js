@@ -1,11 +1,26 @@
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
-  // Meta envía peticiones por POST
-  if (req.method !== 'POST') return res.status(405).end();
+  // 1. Registro (Log) para ver en Vercel qué está llegando exactamente
+  console.log(`[VERCEL LOG] Petición entrante - Método: ${req.method}`);
+
+  // 2. Manejo de comprobaciones de salud (Health-checks) o preflight
+  if (req.method === 'GET' || req.method === 'OPTIONS') {
+    return res.status(200).send("Endpoint activo y esperando POST");
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).send(`Método no soportado: ${req.method}`);
+  }
 
   try {
     const { encrypted_aes_key, encrypted_flow_data, initial_vector } = req.body;
+    
+    // Validar que el cuerpo no esté vacío (Evitar error interno antes de desencriptar)
+    if (!encrypted_aes_key || !encrypted_flow_data) {
+      console.error("[VERCEL LOG] Cuerpo POST incompleto:", req.body);
+      return res.status(400).send("Faltan datos de encriptación");
+    }
     
     // 1. Decodificar las cadenas Base64
     const aesKeyBuffer = Buffer.from(encrypted_aes_key, 'base64');
