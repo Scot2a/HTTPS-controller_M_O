@@ -1,35 +1,34 @@
 import crypto from 'crypto';
 
 export default async function handler(req, res) {
-  // 1. Registro (Log) para ver en Vercel qué está llegando exactamente
   console.log(`[VERCEL LOG] Petición entrante - Método: ${req.method}`);
 
-  // 2. Manejo de comprobaciones de salud (Health-checks) o preflight
   if (req.method === 'GET' || req.method === 'OPTIONS') {
-    return res.status(200).send("Endpoint activo y esperando POST");
+    return res.status(200).send("Endpoint activo");
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).send(`Método no soportado: ${req.method}`);
-  }
+  if (req.method !== 'POST') return res.status(405).end();
 
   try {
     const { encrypted_aes_key, encrypted_flow_data, initial_vector } = req.body;
     
-    // Validar que el cuerpo no esté vacío (Evitar error interno antes de desencriptar)
     if (!encrypted_aes_key || !encrypted_flow_data) {
-      console.error("[VERCEL LOG] Cuerpo POST incompleto:", req.body);
       return res.status(400).send("Faltan datos de encriptación");
     }
-    
-    // Reconstruir la llave privada desde el Base64 seguro
-    const rawPrivateKey = Buffer.from(process.env.PRIVATE_KEY_B64, 'base64').toString('utf-8');
 
-    // 2. Desencriptar la llave AES con tu Llave Privada RSA
+    // AQUÍ ESTÁ LA VARIABLE QUE FALTABA (aesKeyBuffer)
+    const aesKeyBuffer = Buffer.from(encrypted_aes_key, 'base64');
+    const flowDataBuffer = Buffer.from(encrypted_flow_data, 'base64');
+    const ivBuffer = Buffer.from(initial_vector, 'base64');
+
+    // Forzar la lectura de saltos de línea correctos de la variable de entorno
+    const privateKey = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
+
+    // 2. Desencriptar la llave AES
     const decryptedAesKey = crypto.privateDecrypt(
       {
-        key: rawPrivateKey,
-        // IMPORTANTE: Si tu llave NUEVA no tiene contraseña, BORRA O COMENTA la siguiente línea:
+        key: privateKey,
+        // Si tu llave no tiene contraseña, comenta la línea de abajo (// passphrase...)
         passphrase: process.env.PASSPHRASE, 
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256',
@@ -47,20 +46,14 @@ export default async function handler(req, res) {
 
     let responseData = {};
 
-    // 4. Lógica de Enrutamiento y Conexión con Odoo
+    // 4. Lógica de Enrutamiento
     if (flowData.action === 'ping') {
       responseData = { version: "3.0", data: { status: "active" } };
     } else {
-      // Extraer las respuestas del formulario de WhatsApp
-      const userResponses = flowData.data; 
-      
-      // Enviar de forma asíncrona a Odoo
-      await pushToOdoo(userResponses);
-
-      // Respuesta para que WhatsApp pase a la pantalla final
+      // Aquí enviaríamos a Odoo. Por ahora, solo respondemos a Meta para validar
       responseData = {
         version: "3.0",
-        screen: "Qualified", // MODIFICAR: Coloca el ID de tu pantalla final de Flows
+        screen: "PANTALLA_DE_EXITO", 
         data: { success: true }
       };
     }
@@ -78,69 +71,12 @@ export default async function handler(req, res) {
     ]);
     const finalPayload = Buffer.concat([encryptedResponse, cipher.getAuthTag()]);
 
-    // 6. Retornar a Meta
+    // 6. Retornar a Meta en texto plano Base64
     res.setHeader('Content-Type', 'text/plain');
     res.status(200).send(finalPayload.toString('base64'));
 
   } catch (error) {
-    console.error("Error en el endpoint:", error);
+    console.error("Error criptográfico detallado:", error);
     res.status(500).send("Error interno");
   }
-}
-
-// Función de Comunicación XML/JSON-RPC con Odoo
-async function pushToOdoo(data) {
-  const url = `${process.env.ODOO_URL}/jsonrpc`;
-  const db = process.env.ODOO_DB;
-  const username = process.env.ODOO_USERNAME;
-  const apiKey = process.env.ODOO_API_KEY;
-
-  // Paso A: Autenticar para obtener el UID
-  const authResponse = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      method: "call",
-      params: { service: "common", method: "authenticate", args: [db, username, apiKey, {}] }
-    })
-  });
-  const authJson = await authResponse.json();
-  const uid = authJson.result;
-
-  if (!uid) throw new Error("Fallo de autenticación en Odoo");
-
-  // Paso B: Mapear los campos personalizados (MODIFICAR: Ajustar a las llaves de tu Flow)
-  const leadPayload = {
-    name: "Lead Cualificado - WhatsApp Flows",
-    phone: data.telefono_cliente || '', 
-    x_studio_qualification_score: data.puntuacion || 0,
-    x_studio_tipo: data.tipo_vehiculo || false,
-    x_studio_titular: data.es_titular || false,
-    x_studio_momento: data.momento_compra || false,
-    x_studio_modo_de_contacto: data.metodo_contacto || false,
-    x_studio_vehiculo_anterior: data.vehiculo_previo || false,
-    x_studio_venta_baja: data.estado_venta || false,
-    x_studio_mismo_titular: data.mismo_titular || false,
-    x_studio_conviviente: data.es_conviviente || false,
-    x_studio_bought_post_2024: data.compro_post_2024 || false,
-    x_studio_selection_1_1: data.menos_3_meses || false,
-    x_studio_selection_2_1: data.menos_6_meses || false,
-    // Puedes inyectar stage_id aquí si calculas el score en Vercel
-  };
-
-  // Paso C: Crear el registro en crm.lead
-  await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      method: "call",
-      params: { 
-        service: "object", 
-        method: "execute_kw", 
-        args: [db, uid, apiKey, 'crm.lead', 'create', [leadPayload]] 
-      }
-    })
-  });
 }
