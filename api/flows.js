@@ -31,6 +31,7 @@ export default async function handler(req, res) {
     const decryptedAesKey = crypto.privateDecrypt(
       {
         key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n'),
+        passphrase: process.env.PASSPHRASE,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256',
       },
