@@ -37,14 +37,18 @@ export default async function handler(req, res) {
     );
 
     // 3. Desencriptar el payload de Meta (AES-GCM)
+    // Detectar dinámicamente si Meta envió una llave de 16 bytes (AES-128) o 32 bytes (AES-256)
+    const aesAlgorithm = decryptedAesKey.length === 16 ? 'aes-128-gcm' : 'aes-256-gcm';
+    console.log(`[VERCEL LOG] Longitud de la llave AES: ${decryptedAesKey.length} bytes. Algoritmo: ${aesAlgorithm}`);
+
     const authTag = flowDataBuffer.subarray(-16);
     const ciphertext = flowDataBuffer.subarray(0, -16);
-    const decipher = crypto.createDecipheriv('aes-256-gcm', decryptedAesKey, ivBuffer);
+    
+    // Usamos la variable aesAlgorithm en lugar de un texto fijo
+    const decipher = crypto.createDecipheriv(aesAlgorithm, decryptedAesKey, ivBuffer);
     decipher.setAuthTag(authTag);
     const decryptedData = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
     const flowData = JSON.parse(decryptedData.toString('utf-8'));
-
-    let responseData = {};
 
     // 4. Lógica de Enrutamiento
     if (flowData.action === 'ping') {
@@ -64,7 +68,8 @@ export default async function handler(req, res) {
       flippedIv[i] = ~ivBuffer[i] & 0xff; 
     }
 
-    const cipher = crypto.createCipheriv('aes-256-gcm', decryptedAesKey, flippedIv);
+    // Usamos el mismo aesAlgorithm dinámico aquí
+    const cipher = crypto.createCipheriv(aesAlgorithm, decryptedAesKey, flippedIv);
     const encryptedResponse = Buffer.concat([
       cipher.update(JSON.stringify(responseData), 'utf8'),
       cipher.final()
