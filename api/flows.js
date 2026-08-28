@@ -57,9 +57,9 @@ export default async function handler(req, res) {
       };
     }
 
-    // 5. Encriptar la respuesta invirtiendo el Vector de Inicialización
-    const flippedIv = Buffer.alloc(12);
-    for (let i = 0; i < 12; i++) {
+    // 5. Encriptar la respuesta invirtiendo el Vector de Inicialización (Bitwise NOT)
+    const flippedIv = Buffer.alloc(ivBuffer.length); // Se adapta automáticamente a 16 bytes
+    for (let i = 0; i < ivBuffer.length; i++) {
       flippedIv[i] = ~ivBuffer[i] & 0xff; 
     }
 
