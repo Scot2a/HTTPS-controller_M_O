@@ -22,16 +22,15 @@ export default async function handler(req, res) {
       return res.status(400).send("Faltan datos de encriptación");
     }
     
-    // 1. Decodificar las cadenas Base64
-    const aesKeyBuffer = Buffer.from(encrypted_aes_key, 'base64');
-    const flowDataBuffer = Buffer.from(encrypted_flow_data, 'base64');
-    const ivBuffer = Buffer.from(initial_vector, 'base64');
+    // Reconstruir la llave privada desde el Base64 seguro
+    const rawPrivateKey = Buffer.from(process.env.PRIVATE_KEY_B64, 'base64').toString('utf-8');
 
     // 2. Desencriptar la llave AES con tu Llave Privada RSA
     const decryptedAesKey = crypto.privateDecrypt(
       {
-        key: process.env.PRIVATE_KEY.replace(/\\n/g, '\n'),
-        passphrase: process.env.PASSPHRASE,
+        key: rawPrivateKey,
+        // IMPORTANTE: Si tu llave NUEVA no tiene contraseña, BORRA O COMENTA la siguiente línea:
+        passphrase: process.env.PASSPHRASE, 
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256',
       },
