@@ -45,17 +45,59 @@ export default async function handler(req, res) {
     const flowData = JSON.parse(decryptedData.toString('utf-8'));
 
     // 4. Declaración y Lógica de Enrutamiento
-    let responseData = {};
+    // ... (tu código de desencriptación previo) ...
 
-    if (flowData.action === 'ping') {
-      responseData = { version: "3.0", data: { status: "active" } };
-    } else {
-      responseData = {
+let responseData = {};
+
+if (flowData.action === 'ping') {
+    // Validación inicial de Meta
+    responseData = {
         version: "3.0",
-        screen: "PANTALLA_DE_EXITO", 
+        data: { status: "active" }
+    };
+} else if (flowData.action === 'INIT') {
+    // Respuesta inicial cuando el usuario abre el flujo
+    responseData = {
+        version: "3.0",
+        screen: "SCREEN_ONE",
+        data: {}
+    };
+} else if (flowData.action === 'data_exchange') {
+    // Recepción del payload final desde SCREEN_EIG
+    const formData = flowData.data;
+
+    // Transformación de datos para Odoo
+    const leadPayload = {
+        name: "Nuevo Lead EV - Calificación", 
+        // Campos nativos habituales en Odoo
+        email_from: formData.email_cliente || "",
+        phone: formData.telefono_cliente || "",
+        // Campos personalizados (ajusta "x_studio_" según tu nomenclatura)
+        x_studio_compra_post_2024: formData.compra_post,
+        x_studio_tipo_vehiculo: formData.tipo_vehiculo,
+        x_studio_vehiculo_previo: formData.vehiculo_previo,
+        x_studio_es_titular: formData.es_titular,
+        x_studio_mismo_titular: formData.mismo_titular,
+        x_studio_estado_venta: formData.estado_venta,
+        x_studio_es_conviviente: formData.es_conviviente,
+        x_studio_momento_compra: formData.momento_compra,
+        x_studio_menos_3_meses: formData.menos_3_meses,
+        x_studio_menos_6_meses: formData.menos_6_meses,
+        x_studio_metodo_contacto: formData.metodo_contacto
+    };
+
+    // Aquí ejecutas la integración (ej. automatización Python / endpoint de Odoo)
+    // await enviarLeadAOdoo(leadPayload);
+
+    // Respuesta a Meta para avanzar a la pantalla final
+    responseData = {
+        version: "3.0",
+        screen: "PANTALLA_DE_EXITO",
         data: { success: true }
-      };
-    }
+    };
+}
+
+// ... (tu código de encriptación AES/RSA y res.send) ...
 
     // 5. Encriptar la respuesta invirtiendo el Vector de Inicialización (Bitwise NOT)
     const flippedIv = Buffer.alloc(ivBuffer.length); // Se adapta automáticamente a 16 bytes
