@@ -96,25 +96,28 @@ module.exports = async function handler(req, res) {
 
     // Diccionarios de traducción para evitar errores de tildes o formato en Odoo
     const mapSiNo = { "Si": "Sí", "No": "No" };
-    // Agrega diccionarios adicionales si tienes más campos con tildes (ej: "Despues": "Después")
-    const mapMomento = { "Despues": "Después" };
-      
-        const leadPayload = {
-            name: "Nuevo Lead EV - Calificación", 
-            email_from: formData.email_cliente || "",
-            phone: formData.telefono_cliente || "",
-            x_studio_bought_post: formData.compra_post,
-            x_studio_tipo: formData.tipo_vehiculo,
-            x_studio_vehiculo_anterior: formData.vehiculo_previo,
-            x_studio_titular: formData.es_titular,
-            x_studio_mismo_titular: formData.mismo_titular,
-            x_studio_venta_baja: formData.estado_venta,
-            x_studio_es_conviviente: formData.es_conviviente,
-            x_studio_momento: formData.momento_compra,
-            x_studio_menos_3_meses: formData.menos_3_meses,
-            x_studio_menos_6_meses: formData.menos_6_meses,
-            x_studio_modo_de_contacto: formData.metodo_contacto
-        };
+const mapMomento = { "Despues": "Después" };
+
+const leadPayload = {
+    name: "Nuevo Lead EV - Calificación", 
+    email_from: formData.email_cliente || "",
+    phone: formData.telefono_cliente || "",
+    // Aplicamos el diccionario mapSiNo a todas las respuestas de Sí/No
+    x_studio_bought_post: mapSiNo[formData.compra_post] || formData.compra_post,
+    x_studio_tipo: formData.tipo_vehiculo,
+    x_studio_vehiculo_anterior: formData.vehiculo_previo,
+    x_studio_titular: mapSiNo[formData.es_titular] || formData.es_titular,
+    x_studio_mismo_titular: mapSiNo[formData.mismo_titular] || formData.mismo_titular,
+    x_studio_venta_baja: formData.estado_venta,
+    x_studio_es_conviviente: mapSiNo[formData.es_conviviente] || formData.es_conviviente,
+    
+    // Aplicamos el diccionario mapMomento a la variable correspondiente
+    x_studio_momento: mapMomento[formData.momento_compra] || formData.momento_compra,
+    
+    x_studio_menos_3_meses: mapSiNo[formData.menos_3_meses] || formData.menos_3_meses,
+    x_studio_menos_6_meses: mapSiNo[formData.menos_6_meses] || formData.menos_6_meses,
+    x_studio_modo_de_contacto: formData.metodo_contacto
+};
 
         try {
             await enviarLeadAOdoo(leadPayload);
