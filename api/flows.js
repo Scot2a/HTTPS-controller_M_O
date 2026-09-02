@@ -94,6 +94,11 @@ module.exports = async function handler(req, res) {
     } else if (flowData.action === 'data_exchange') {
         const formData = flowData.data;
 
+    // Diccionarios de traducción para evitar errores de tildes o formato en Odoo
+    const mapSiNo = { "Si": "Sí", "No": "No" };
+    // Agrega diccionarios adicionales si tienes más campos con tildes (ej: "Despues": "Después")
+    const mapMomento = { "Despues": "Después" };
+      
         const leadPayload = {
             name: "Nuevo Lead EV - Calificación", 
             email_from: formData.email_cliente || "",
