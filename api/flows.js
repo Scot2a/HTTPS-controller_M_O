@@ -54,7 +54,7 @@ module.exports = async function handler(req, res) {
           service: "object",
           method: "execute_kw",
           args: [
-            process.env.ODOO_DB_NAME, // Corrección 2: Nombre de la variable
+            process.env.ODOO_DB, // Corrección 2: Nombre de la variable
             parseInt(process.env.ODOO_UID), 
             process.env.ODOO_API_KEY, 
             "crm.lead",               // Corrección 3: Modelo correcto
