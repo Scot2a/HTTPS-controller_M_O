@@ -105,7 +105,7 @@ const leadPayload = {
     phone: formData.telefono_cliente || "",
     // Aplicamos el diccionario mapSiNo a todas las respuestas de Sí/No
     x_studio_bought_post: mapSiNo[formData.compra_post] || formData.compra_post,
-    x_studio_tipo: formData.tipo_vehiculo,
+    x_studio_tipo: mapSiNo[formData.tipo_vehiculo] || formData.compra_post,
     x_studio_vehiculo_anterior: mapVehiculo[formData.vehiculo_previo] || formData.vehiculo_previo,
     x_studio_titular: mapSiNo[formData.es_titular] || formData.es_titular,
     x_studio_mismo_titular: mapSiNo[formData.mismo_titular] || formData.mismo_titular,
