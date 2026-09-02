@@ -128,13 +128,7 @@ export default async function handler(req, res) {
                 screen: "PANTALLA_DE_EXITO",
                 data: { success: true }
             };
-        } catch (error) {
-            responseData = {
-                version: "3.0",
-                screen: "PANTALLA_DE_ERROR", 
-                data: { error_msg: "Hubo un problema registrando tu solicitud." }
-            };
-        }
+        } 
     }
 
     const flippedIv = Buffer.alloc(ivBuffer.length);
