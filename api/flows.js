@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
     const flowData = JSON.parse(decryptedData.toString('utf-8'));
 
     async function enviarLeadAOdoo(payload) {
-      const odooUrl = `${process.env.ODOO_BASE_URL}/jsonrpc`; 
+      const odooUrl = `${process.env.vehiclebangboo.odoo.com}/jsonrpc`; 
       console.log("[VERCEL LOG] Enviando datos a Odoo...");
       
       const rpcBody = {
