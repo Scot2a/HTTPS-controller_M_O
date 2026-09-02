@@ -101,6 +101,7 @@ module.exports = async function handler(req, res) {
 
 const leadPayload = {
     name: "Nuevo Lead EV - Calificación", 
+    type: "opportunity",
     email_from: formData.email_cliente || "",
     phone: formData.telefono_cliente || "",
     // Aplicamos el diccionario mapSiNo a todas las respuestas de Sí/No
