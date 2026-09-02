@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 
-export default async function handler(req, res) {
+// Corrección 1: Usar module.exports en lugar de export default
+module.exports = async function handler(req, res) {
   console.log(`[VERCEL LOG] Petición entrante - Método: ${req.method}`);
 
   if (req.method === 'GET' || req.method === 'OPTIONS') {
@@ -22,18 +23,16 @@ export default async function handler(req, res) {
 
     const privateKey = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
 
-    // 2. Desencriptar la llave AES
     const decryptedAesKey = crypto.privateDecrypt(
       {
         key: privateKey,
-        passphrase: process.env.PASSPHRASE, // Descomenta solo si tu llave actual tiene contraseña
+        passphrase: process.env.PASSPHRASE,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256',
       },
       aesKeyBuffer
     );
 
-    // 3. Desencriptar el payload de Meta (AES-GCM dinámico)
     const aesAlgorithm = decryptedAesKey.length === 16 ? 'aes-128-gcm' : 'aes-256-gcm';
     console.log(`[VERCEL LOG] Longitud AES: ${decryptedAesKey.length} bytes. Algoritmo: ${aesAlgorithm}`);
 
@@ -44,75 +43,55 @@ export default async function handler(req, res) {
     const decryptedData = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
     const flowData = JSON.parse(decryptedData.toString('utf-8'));
 
-    //3.5. Definición de la funcion enviar payload a Odoo
-
     async function enviarLeadAOdoo(payload) {
-  // En Odoo SaaS, la URL base debe apuntar al endpoint nativo JSON-RPC
-  const odooUrl = `${process.env.ODOO_BASE_URL}/jsonrpc`; 
-  
-  console.log("[VERCEL LOG] Enviando datos a Odoo...");
-  
-  const rpcBody = {
-    jsonrpc: "2.0",
-    method: "call",
-    params: {
-      service: "object",
-      method: "execute_kw",
-      args: [
-        process.env.Vehiclebangboo,       // Nombre exacto de tu base de datos
-        parseInt(process.env.2), // ID del usuario (suele ser 2 para el admin)
-        process.env.915e39691c3df33aa3253e61b986c7a67357a88e,       // Contraseña o Token de la cuenta
-        "crm.Flujo",                     // El modelo donde crearás el registro (CRM)
-        "create",                       // Acción a ejecutar
-        [payload]                       // Odoo exige que el objeto vaya dentro de un array
-      ]
+      const odooUrl = `${process.env.ODOO_BASE_URL}/jsonrpc`; 
+      console.log("[VERCEL LOG] Enviando datos a Odoo...");
+      
+      const rpcBody = {
+        jsonrpc: "2.0",
+        method: "call",
+        params: {
+          service: "object",
+          method: "execute_kw",
+          args: [
+            process.env.ODOO_DB_NAME, // Corrección 2: Nombre de la variable
+            parseInt(process.env.ODOO_UID), 
+            process.env.ODOO_API_KEY, 
+            "crm.lead",               // Corrección 3: Modelo correcto
+            "create",
+            [payload]
+          ]
+        }
+      };
+
+      const response = await fetch(odooUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rpcBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Fallo de conexión HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error("[VERCEL LOG] Error interno de Odoo:", JSON.stringify(data.error));
+        throw new Error('Odoo rechazó los campos. Verifica los x_studio_');
+      }
+
+      console.log("[VERCEL LOG] Lead creado exitosamente en Odoo con ID:", data.result);
+      return data.result;
     }
-  };
 
-  const response = await fetch(odooUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(rpcBody)
-  });
+    let responseData = {};
 
-  if (!response.ok) {
-    throw new Error(`Fallo de conexión HTTP: ${response.status}`);
-  }
-
-  const data = await response.json();
-  
-  // Odoo JSON-RPC devuelve código 200 incluso si hay errores lógicos, 
-  // el error viene encapsulado dentro del JSON de respuesta.
-  if (data.error) {
-    console.error("[VERCEL LOG] Error interno de Odoo:", JSON.stringify(data.error));
-    throw new Error('Odoo rechazó los campos. Verifica los x_studio_');
-  }
-
-  console.log("[VERCEL LOG] Lead creado exitosamente en Odoo con ID:", data.result);
-  return data.result;
-}
-
-    // 4. Declaración y Lógica de Enrutamiento
-    // ... (tu código de desencriptación previo) ...
-
-let responseData = {};
-
-if (flowData.action === 'ping') {
-    // Validación inicial de Meta
-    responseData = {
-        version: "3.0",
-        data: { status: "active" }
-    };
-} else if (flowData.action === 'INIT') {
-    // Respuesta inicial cuando el usuario abre el flujo
-    responseData = {
-        version: "3.0",
-        screen: "SCREEN_ONE",
-        data: {}
-    };
-} else if (flowData.action === 'data_exchange') {
+    if (flowData.action === 'ping') {
+        responseData = { version: "3.0", data: { status: "active" } };
+    } else if (flowData.action === 'INIT') {
+        responseData = { version: "3.0", screen: "SCREEN_ONE", data: {} };
+    } else if (flowData.action === 'data_exchange') {
         const formData = flowData.data;
 
         const leadPayload = {
@@ -134,16 +113,13 @@ if (flowData.action === 'ping') {
 
         try {
             await enviarLeadAOdoo(leadPayload);
-
-            // Éxito: Avanza a la pantalla final de éxito que sí existe en tu Flow
             responseData = {
                 version: "3.0",
                 screen: "PANTALLA_DE_EXITO",
                 data: { success: true }
             };
         } catch (error) {
-            // Si ocurre un error, en vez de mandar una pantalla fantasma, 
-            // devolvemos a la última pantalla del flujo (SCREEN_EIG) o un data vacío
+            console.error("[VERCEL LOG] Error en data_exchange:", error.message);
             responseData = {
                 version: "3.0",
                 screen: "SCREEN_EIG", 
@@ -151,10 +127,8 @@ if (flowData.action === 'ping') {
             };
         }
     }
-    // ... (tu código de encriptación AES/RSA y res.send) ...
 
-    // 5. Encriptar la respuesta invirtiendo el Vector de Inicialización (Bitwise NOT)
-    const flippedIv = Buffer.alloc(ivBuffer.length); // Se adapta automáticamente a 16 bytes
+    const flippedIv = Buffer.alloc(ivBuffer.length);
     for (let i = 0; i < ivBuffer.length; i++) {
       flippedIv[i] = ~ivBuffer[i] & 0xff; 
     }
@@ -166,7 +140,6 @@ if (flowData.action === 'ping') {
     ]);
     const finalPayload = Buffer.concat([encryptedResponse, cipher.getAuthTag()]);
 
-    // 6. Retornar a Meta
     res.setHeader('Content-Type', 'text/plain');
     res.status(200).send(finalPayload.toString('base64'));
 
@@ -174,4 +147,4 @@ if (flowData.action === 'ping') {
     console.error("Error criptográfico detallado:", error);
     res.status(500).send("Error interno");
   }
-}
+};
