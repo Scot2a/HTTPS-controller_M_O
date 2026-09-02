@@ -1,4 +1,4 @@
-import crypto from 'crypto';
+const crypto = require('crypto'); // Cambiado a require para evitar el error de módulo
 
 export default async function handler(req, res) {
   console.log(`[VERCEL LOG] Petición entrante - Método: ${req.method}`);
@@ -22,18 +22,16 @@ export default async function handler(req, res) {
 
     const privateKey = process.env.PRIVATE_KEY.replace(/\\n/g, '\n');
 
-    // 2. Desencriptar la llave AES
     const decryptedAesKey = crypto.privateDecrypt(
       {
         key: privateKey,
-        passphrase: process.env.PASSPHRASE, // Descomenta solo si tu llave actual tiene contraseña
+        passphrase: process.env.PASSPHRASE,
         padding: crypto.constants.RSA_PKCS1_OAEP_PADDING,
         oaepHash: 'sha256',
       },
       aesKeyBuffer
     );
 
-    // 3. Desencriptar el payload de Meta (AES-GCM dinámico)
     const aesAlgorithm = decryptedAesKey.length === 16 ? 'aes-128-gcm' : 'aes-256-gcm';
     console.log(`[VERCEL LOG] Longitud AES: ${decryptedAesKey.length} bytes. Algoritmo: ${aesAlgorithm}`);
 
@@ -44,116 +42,102 @@ export default async function handler(req, res) {
     const decryptedData = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
     const flowData = JSON.parse(decryptedData.toString('utf-8'));
 
-    //3.5. Definición de la funcion enviar payload a Odoo
-
     async function enviarLeadAOdoo(payload) {
-  // En Odoo SaaS, la URL base debe apuntar al endpoint nativo JSON-RPC
-  const odooUrl = `${process.env.ODOO_BASE_URL}/jsonrpc`; 
-  
-  console.log("[VERCEL LOG] Enviando datos a Odoo...");
-  
-  const rpcBody = {
-    jsonrpc: "2.0",
-    method: "call",
-    params: {
-      service: "object",
-      method: "execute_kw",
-      args: [
-        process.env.Vehiclebangboo,       // Nombre exacto de tu base de datos
-        parseInt(process.env.2), // ID del usuario (suele ser 2 para el admin)
-        process.env.915e39691c3df33aa3253e61b986c7a67357a88e,       // Contraseña o Token de la cuenta
-        "crm.Flujo",                     // El modelo donde crearás el registro (CRM)
-        "create",                       // Acción a ejecutar
-        [payload]                       // Odoo exige que el objeto vaya dentro de un array
-      ]
+      const odooUrl = `${process.env.ODOO_BASE_URL}/jsonrpc`; 
+      
+      console.log("[VERCEL LOG] Enviando datos a Odoo...");
+      
+      const rpcBody = {
+        jsonrpc: "2.0",
+        method: "call",
+        params: {
+          service: "object",
+          method: "execute_kw",
+          args: [
+            "Vehiclebangboo",                            // String puro
+            2,                                           // Número entero puro
+            "915e39691c3df33aa3253e61b986c7a67357a88e",  // String puro
+            "crm.lead",                                  // Modelo estándar de Odoo
+            "create",
+            [payload]
+          ]
+        }
+      };
+
+      const response = await fetch(odooUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(rpcBody)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Fallo de conexión HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error("[VERCEL LOG] Error interno de Odoo:", JSON.stringify(data.error));
+        throw new Error('Odoo rechazó los campos. Verifica los x_studio_');
+      }
+
+      console.log("[VERCEL LOG] Lead creado exitosamente en Odoo con ID:", data.result);
+      return data.result;
     }
-  };
 
-  const response = await fetch(odooUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(rpcBody)
-  });
+    let responseData = {};
 
-  if (!response.ok) {
-    throw new Error(`Fallo de conexión HTTP: ${response.status}`);
-  }
-
-  const data = await response.json();
-  
-  // Odoo JSON-RPC devuelve código 200 incluso si hay errores lógicos, 
-  // el error viene encapsulado dentro del JSON de respuesta.
-  if (data.error) {
-    console.error("[VERCEL LOG] Error interno de Odoo:", JSON.stringify(data.error));
-    throw new Error('Odoo rechazó los campos. Verifica los x_studio_');
-  }
-
-  console.log("[VERCEL LOG] Lead creado exitosamente en Odoo con ID:", data.result);
-  return data.result;
-}
-
-    // 4. Declaración y Lógica de Enrutamiento
-    // ... (tu código de desencriptación previo) ...
-
-let responseData = {};
-
-if (flowData.action === 'ping') {
-    // Validación inicial de Meta
-    responseData = {
-        version: "3.0",
-        data: { status: "active" }
-    };
-} else if (flowData.action === 'INIT') {
-    // Respuesta inicial cuando el usuario abre el flujo
-    responseData = {
-        version: "3.0",
-        screen: "SCREEN_ONE",
-        data: {}
-    };
-} else if (flowData.action === 'data_exchange') {
-    const formData = flowData.data;
-
-    const leadPayload = {
-        name: "Nuevo Lead EV - Calificación", 
-        email_from: formData.email_cliente || "",
-        phone: formData.telefono_cliente || "",
-        x_studio_compra_post_2024: formData.compra_post,
-        x_studio_tipo_vehiculo: formData.tipo_vehiculo,
-        x_studio_vehiculo_previo: formData.vehiculo_previo,
-        x_studio_es_titular: formData.es_titular,
-        x_studio_mismo_titular: formData.mismo_titular,
-        x_studio_estado_venta: formData.estado_venta,
-        x_studio_es_conviviente: formData.es_conviviente,
-        x_studio_momento_compra: formData.momento_compra,
-        x_studio_menos_3_meses: formData.menos_3_meses,
-        x_studio_menos_6_meses: formData.menos_6_meses,
-        x_studio_metodo_contacto: formData.metodo_contacto
-    };
-
-    try {
-        // Ejecución real hacia Odoo
-        await enviarLeadAOdoo(leadPayload);
-
+    if (flowData.action === 'ping') {
         responseData = {
             version: "3.0",
-            screen: "PANTALLA_DE_EXITO",
-            data: { success: true }
+            data: { status: "active" }
         };
-    } catch (error) {
-        // Si Odoo rechaza el dato, devolvemos a una pantalla de error en el Flow
+    } else if (flowData.action === 'INIT') {
         responseData = {
             version: "3.0",
-            screen: "PANTALLA_DE_ERROR", 
-            data: { error_msg: "Hubo un problema registrando tu solicitud." }
+            screen: "SCREEN_ONE",
+            data: {}
         };
-    }
-}
-// ... (tu código de encriptación AES/RSA y res.send) ...
+    } else if (flowData.action === 'data_exchange') {
+        const formData = flowData.data;
 
-    // 5. Encriptar la respuesta invirtiendo el Vector de Inicialización (Bitwise NOT)
-    const flippedIv = Buffer.alloc(ivBuffer.length); // Se adapta automáticamente a 16 bytes
+        const leadPayload = {
+            name: "Nuevo Lead EV - Calificación", 
+            email_from: formData.email_cliente || "",
+            phone: formData.telefono_cliente || "",
+            x_studio_compra_post_2024: formData.compra_post,
+            x_studio_tipo_vehiculo: formData.tipo_vehiculo,
+            x_studio_vehiculo_previo: formData.vehiculo_previo,
+            x_studio_es_titular: formData.es_titular,
+            x_studio_mismo_titular: formData.mismo_titular,
+            x_studio_estado_venta: formData.estado_venta,
+            x_studio_es_conviviente: formData.es_conviviente,
+            x_studio_momento_compra: formData.momento_compra,
+            x_studio_menos_3_meses: formData.menos_3_meses,
+            x_studio_menos_6_meses: formData.menos_6_meses,
+            x_studio_metodo_contacto: formData.metodo_contacto
+        };
+
+        try {
+            await enviarLeadAOdoo(leadPayload);
+
+            responseData = {
+                version: "3.0",
+                screen: "PANTALLA_DE_EXITO",
+                data: { success: true }
+            };
+        } catch (error) {
+            responseData = {
+                version: "3.0",
+                screen: "PANTALLA_DE_ERROR", 
+                data: { error_msg: "Hubo un problema registrando tu solicitud." }
+            };
+        }
+    }
+
+    const flippedIv = Buffer.alloc(ivBuffer.length);
     for (let i = 0; i < ivBuffer.length; i++) {
       flippedIv[i] = ~ivBuffer[i] & 0xff; 
     }
@@ -165,7 +149,6 @@ if (flowData.action === 'ping') {
     ]);
     const finalPayload = Buffer.concat([encryptedResponse, cipher.getAuthTag()]);
 
-    // 6. Retornar a Meta
     res.setHeader('Content-Type', 'text/plain');
     res.status(200).send(finalPayload.toString('base64'));
 
