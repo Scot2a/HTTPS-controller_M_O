@@ -44,6 +44,56 @@ export default async function handler(req, res) {
     const decryptedData = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
     const flowData = JSON.parse(decryptedData.toString('utf-8'));
 
+    //3.5. Definición de la funcion enviar payload a Odoo
+
+    async function enviarLeadAOdoo(payload) {
+  // En Odoo SaaS, la URL base debe apuntar al endpoint nativo JSON-RPC
+  const odooUrl = `${process.env.ODOO_BASE_URL}/jsonrpc`; 
+  
+  console.log("[VERCEL LOG] Enviando datos a Odoo...");
+  
+  const rpcBody = {
+    jsonrpc: "2.0",
+    method: "call",
+    params: {
+      service: "object",
+      method: "execute_kw",
+      args: [
+        process.env.Vehiclebangboo,       // Nombre exacto de tu base de datos
+        parseInt(process.env.2), // ID del usuario (suele ser 2 para el admin)
+        process.env.915e39691c3df33aa3253e61b986c7a67357a88e,       // Contraseña o Token de la cuenta
+        "crm.Flujo",                     // El modelo donde crearás el registro (CRM)
+        "create",                       // Acción a ejecutar
+        [payload]                       // Odoo exige que el objeto vaya dentro de un array
+      ]
+    }
+  };
+
+  const response = await fetch(odooUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(rpcBody)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Fallo de conexión HTTP: ${response.status}`);
+  }
+
+  const data = await response.json();
+  
+  // Odoo JSON-RPC devuelve código 200 incluso si hay errores lógicos, 
+  // el error viene encapsulado dentro del JSON de respuesta.
+  if (data.error) {
+    console.error("[VERCEL LOG] Error interno de Odoo:", JSON.stringify(data.error));
+    throw new Error('Odoo rechazó los campos. Verifica los x_studio_');
+  }
+
+  console.log("[VERCEL LOG] Lead creado exitosamente en Odoo con ID:", data.result);
+  return data.result;
+}
+
     // 4. Declaración y Lógica de Enrutamiento
     // ... (tu código de desencriptación previo) ...
 
@@ -63,16 +113,12 @@ if (flowData.action === 'ping') {
         data: {}
     };
 } else if (flowData.action === 'data_exchange') {
-    // Recepción del payload final desde SCREEN_EIG
     const formData = flowData.data;
 
-    // Transformación de datos para Odoo
     const leadPayload = {
         name: "Nuevo Lead EV - Calificación", 
-        // Campos nativos habituales en Odoo
         email_from: formData.email_cliente || "",
         phone: formData.telefono_cliente || "",
-        // Campos personalizados (ajusta "x_studio_" según tu nomenclatura)
         x_studio_compra_post_2024: formData.compra_post,
         x_studio_tipo_vehiculo: formData.tipo_vehiculo,
         x_studio_vehiculo_previo: formData.vehiculo_previo,
@@ -86,17 +132,24 @@ if (flowData.action === 'ping') {
         x_studio_metodo_contacto: formData.metodo_contacto
     };
 
-    // Aquí ejecutas la integración (ej. automatización Python / endpoint de Odoo)
-    // await enviarLeadAOdoo(leadPayload);
+    try {
+        // Ejecución real hacia Odoo
+        await enviarLeadAOdoo(leadPayload);
 
-    // Respuesta a Meta para avanzar a la pantalla final
-    responseData = {
-        version: "3.0",
-        screen: "PANTALLA_DE_EXITO",
-        data: { success: true }
-    };
+        responseData = {
+            version: "3.0",
+            screen: "PANTALLA_DE_EXITO",
+            data: { success: true }
+        };
+    } catch (error) {
+        // Si Odoo rechaza el dato, devolvemos a una pantalla de error en el Flow
+        responseData = {
+            version: "3.0",
+            screen: "PANTALLA_DE_ERROR", 
+            data: { error_msg: "Hubo un problema registrando tu solicitud." }
+        };
+    }
 }
-
 // ... (tu código de encriptación AES/RSA y res.send) ...
 
     // 5. Encriptar la respuesta invirtiendo el Vector de Inicialización (Bitwise NOT)
