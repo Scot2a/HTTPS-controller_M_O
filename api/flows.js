@@ -98,17 +98,17 @@ module.exports = async function handler(req, res) {
             name: "Nuevo Lead EV - Calificación", 
             email_from: formData.email_cliente || "",
             phone: formData.telefono_cliente || "",
-            x_studio_compra_post_2024: formData.compra_post,
-            x_studio_tipo_vehiculo: formData.tipo_vehiculo,
-            x_studio_vehiculo_previo: formData.vehiculo_previo,
-            x_studio_es_titular: formData.es_titular,
+            x_studio_bought_post: formData.compra_post,
+            x_studio_tipo: formData.tipo_vehiculo,
+            x_studio_vehiculo_anterior: formData.vehiculo_previo,
+            x_studio_titular: formData.es_titular,
             x_studio_mismo_titular: formData.mismo_titular,
-            x_studio_estado_venta: formData.estado_venta,
+            x_studio_venta_baja: formData.estado_venta,
             x_studio_es_conviviente: formData.es_conviviente,
-            x_studio_momento_compra: formData.momento_compra,
+            x_studio_momento: formData.momento_compra,
             x_studio_menos_3_meses: formData.menos_3_meses,
             x_studio_menos_6_meses: formData.menos_6_meses,
-            x_studio_metodo_contacto: formData.metodo_contacto
+            x_studio_modo_de_contacto: formData.metodo_contacto
         };
 
         try {
