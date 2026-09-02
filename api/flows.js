@@ -96,7 +96,8 @@ module.exports = async function handler(req, res) {
 
     // Diccionarios de traducción para evitar errores de tildes o formato en Odoo
     const mapSiNo = { "Si": "Sí", "No": "No" };
-const mapMomento = { "Despues": "Después" };
+    const mapVehiculo = {"Combustion": "Combustión", "Hibrido": "Híbrido", "Electrico": "Eléctrico" };
+    const mapMomento = { "Despues": "Después" };
 
 const leadPayload = {
     name: "Nuevo Lead EV - Calificación", 
@@ -104,8 +105,8 @@ const leadPayload = {
     phone: formData.telefono_cliente || "",
     // Aplicamos el diccionario mapSiNo a todas las respuestas de Sí/No
     x_studio_bought_post: mapSiNo[formData.compra_post] || formData.compra_post,
-    x_studio_tipo: formData.tipo_vehiculo,
-    x_studio_vehiculo_anterior: formData.vehiculo_previo,
+    x_studio_tipo: mapSiNo[formData.tipo_vehiculo] || formData.tipo_vehiculo,
+    x_studio_vehiculo_anterior: mapVehiculo[formData.vehiculo_previo] || formData.vehiculo_previo,
     x_studio_titular: mapSiNo[formData.es_titular] || formData.es_titular,
     x_studio_mismo_titular: mapSiNo[formData.mismo_titular] || formData.mismo_titular,
     x_studio_venta_baja: formData.estado_venta,
