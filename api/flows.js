@@ -1,6 +1,5 @@
 const crypto = require('crypto');
 
-// Corrección 1: Usar module.exports en lugar de export default
 module.exports = async function handler(req, res) {
   console.log(`[VERCEL LOG] Petición entrante - Método: ${req.method}`);
 
@@ -34,8 +33,6 @@ module.exports = async function handler(req, res) {
     );
 
     const aesAlgorithm = decryptedAesKey.length === 16 ? 'aes-128-gcm' : 'aes-256-gcm';
-    console.log(`[VERCEL LOG] Longitud AES: ${decryptedAesKey.length} bytes. Algoritmo: ${aesAlgorithm}`);
-
     const authTag = flowDataBuffer.subarray(-16);
     const ciphertext = flowDataBuffer.subarray(0, -16);
     const decipher = crypto.createDecipheriv(aesAlgorithm, decryptedAesKey, ivBuffer);
@@ -43,45 +40,75 @@ module.exports = async function handler(req, res) {
     const decryptedData = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
     const flowData = JSON.parse(decryptedData.toString('utf-8'));
 
+    // NUEVO: Función auxiliar adaptada a JSON-RPC con fetch
+    async function getOrCreateUtmId(model, name) {
+      if (!name) return false;
+      const odooUrl = `${process.env.ODOO_URL}/jsonrpc`;
+
+      // 1. Buscar si existe
+      const searchBody = {
+        jsonrpc: "2.0", method: "call",
+        params: {
+          service: "object", method: "execute_kw",
+          args: [
+            process.env.ODOO_DB, parseInt(process.env.ODOO_UID), process.env.ODOO_API_KEY, 
+            model, "search", [[["name", "=", name]]], { limit: 1 }
+          ]
+        }
+      };
+
+      try {
+        let response = await fetch(odooUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(searchBody) });
+        let data = await response.json();
+        
+        if (data.result && data.result.length > 0) {
+          return data.result[0]; // Retorna el ID numérico existente
+        }
+
+        // 2. Si no existe, crearlo
+        const createBody = {
+          jsonrpc: "2.0", method: "call",
+          params: {
+            service: "object", method: "execute_kw",
+            args: [
+              process.env.ODOO_DB, parseInt(process.env.ODOO_UID), process.env.ODOO_API_KEY, 
+              model, "create", [{ name: name }]
+            ]
+          }
+        };
+
+        response = await fetch(odooUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(createBody) });
+        data = await response.json();
+        return data.result; // Retorna el nuevo ID numérico
+
+      } catch (error) {
+        console.error(`[VERCEL LOG] Error procesando UTM (${model}):`, error);
+        return false;
+      }
+    }
+
     async function enviarLeadAOdoo(payload) {
       const odooUrl = `${process.env.ODOO_URL}/jsonrpc`; 
-      console.log("[VERCEL LOG] Enviando datos a Odoo...");
       
       const rpcBody = {
-        jsonrpc: "2.0",
-        method: "call",
+        jsonrpc: "2.0", method: "call",
         params: {
-          service: "object",
-          method: "execute_kw",
+          service: "object", method: "execute_kw",
           args: [
-            process.env.ODOO_DB, // Corrección 2: Nombre de la variable
-            parseInt(process.env.ODOO_UID), 
-            process.env.ODOO_API_KEY, 
-            "crm.lead",               // Corrección 3: Modelo correcto
-            "create",
-            [payload]
+            process.env.ODOO_DB, parseInt(process.env.ODOO_UID), process.env.ODOO_API_KEY, 
+            "crm.lead", "create", [payload]
           ]
         }
       };
 
       const response = await fetch(odooUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rpcBody)
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(rpcBody)
       });
 
-      if (!response.ok) {
-        throw new Error(`Fallo de conexión HTTP: ${response.status}`);
-      }
-
+      if (!response.ok) throw new Error(`Fallo HTTP: ${response.status}`);
       const data = await response.json();
+      if (data.error) throw new Error('Odoo rechazó los campos.');
       
-      if (data.error) {
-        console.error("[VERCEL LOG] Error interno de Odoo:", JSON.stringify(data.error));
-        throw new Error('Odoo rechazó los campos. Verifica los x_studio_');
-      }
-
-      console.log("[VERCEL LOG] Lead creado exitosamente en Odoo con ID:", data.result);
       return data.result;
     }
 
@@ -94,35 +121,40 @@ module.exports = async function handler(req, res) {
     } else if (flowData.action === 'data_exchange') {
         const formData = flowData.data;
 
-    // Diccionarios de traducción para evitar errores de tildes o formato en Odoo
-    const mapSiNo = { "Si": "Sí", "No": "No" };
-    const mapVehiculo = {"Combustion": "Combustión", "Hibrido": "Híbrido", "Electrico": "Eléctrico" };
-    const mapMomento = { "Despues": "Después" };
-    const mapModo = {"Movil": "Móvil"};
+        const mapSiNo = { "Si": "Sí", "No": "No" };
+        const mapVehiculo = {"Combustion": "Combustión", "Hibrido": "Híbrido", "Electrico": "Eléctrico" };
+        const mapMomento = { "Despues": "Después" };
+        const mapModo = {"Movil": "Móvil"};
 
-const leadPayload = {
-    name: "Campaña de renovación de Vehículo eléctrico", 
-    type: "opportunity",
-    x_studio_lead_name: formData.nombre_cliente,
-    x_studio_lead_lastname: formData.apellido_cliente,
-    email_from: formData.email_cliente || "",
-    phone: formData.telefono_cliente || "",
-    // Aplicamos el diccionario mapSiNo a todas las respuestas de Sí/No
-    x_studio_bought_post: mapSiNo[formData.compra_post] || formData.compra_post,
-    x_studio_tipo: mapSiNo[formData.tipo_vehiculo] || formData.compra_post,
-    x_studio_vehiculo_anterior: mapVehiculo[formData.vehiculo_previo] || formData.vehiculo_previo,
-    x_studio_titular: mapSiNo[formData.es_titular] || formData.es_titular,
-    x_studio_mismo_titular: mapSiNo[formData.mismo_titular] || formData.mismo_titular,
-    x_studio_venta_baja: formData.estado_venta,
-    x_studio_es_conviviente: mapSiNo[formData.es_conviviente] || formData.es_conviviente,
-    
-    // Aplicamos el diccionario mapMomento a la variable correspondiente
-    x_studio_momento: mapMomento[formData.momento_compra] || formData.momento_compra,
-    
-    x_studio_menos_3_meses: mapSiNo[formData.menos_3_meses] || formData.menos_3_meses,
-    x_studio_menos_6_meses: mapSiNo[formData.menos_6_meses] || formData.menos_6_meses,
-    x_studio_modo_de_contacto: mapModo[formData.metodo_contacto] || formData.metodo_contacto
-};
+        // RESOLUCIÓN DE UTMs
+        const idSource = await getOrCreateUtmId("utm.source", "Meta");
+        const idMedium = await getOrCreateUtmId("utm.medium", "WhatsApp flows");
+        const idCampaign = await getOrCreateUtmId("utm.campaign", "Campaña TRA050P");
+
+        const leadPayload = {
+            name: "Campaña de renovación de Vehículo eléctrico", 
+            type: "opportunity",
+            x_studio_lead_name: formData.nombre_cliente,
+            x_studio_lead_lastname: formData.apellido_cliente,
+            email_from: formData.email_cliente || "",
+            phone: formData.telefono_cliente || "",
+            x_studio_bought_post: mapSiNo[formData.compra_post] || formData.compra_post,
+            x_studio_tipo: mapSiNo[formData.tipo_vehiculo] || formData.tipo_vehiculo,
+            x_studio_vehiculo_anterior: mapVehiculo[formData.vehiculo_previo] || formData.vehiculo_previo,
+            x_studio_titular: mapSiNo[formData.es_titular] || formData.es_titular,
+            x_studio_mismo_titular: mapSiNo[formData.mismo_titular] || formData.mismo_titular,
+            x_studio_venta_baja: formData.estado_venta,
+            x_studio_es_conviviente: mapSiNo[formData.es_conviviente] || formData.es_conviviente,
+            x_studio_momento: mapMomento[formData.momento_compra] || formData.momento_compra,
+            x_studio_menos_3_meses: mapSiNo[formData.menos_3_meses] || formData.menos_3_meses,
+            x_studio_menos_6_meses: mapSiNo[formData.menos_6_meses] || formData.menos_6_meses,
+            x_studio_modo_de_contacto: mapModo[formData.metodo_contacto] || formData.metodo_contacto,
+            
+            // ASIGNACIÓN DE IDs NUMÉRICOS A LOS CAMPOS MANY2ONE
+            x_studio_source_origin: idSource || false,
+            x_studio_medium_origin: idMedium || false,
+            x_studio_campaign_origin: idCampaign || false
+        };
 
         try {
             await enviarLeadAOdoo(leadPayload);
