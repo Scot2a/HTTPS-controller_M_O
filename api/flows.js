@@ -98,9 +98,10 @@ module.exports = async function handler(req, res) {
     const mapSiNo = { "Si": "Sí", "No": "No" };
     const mapVehiculo = {"Combustion": "Combustión", "Hibrido": "Híbrido", "Electrico": "Eléctrico" };
     const mapMomento = { "Despues": "Después" };
+    const mapModo = {"Movil": "Móvil"};
 
 const leadPayload = {
-    name: "Nuevo Lead EV - Calificación", 
+    name: "Campaña de renovación de Vehículo eléctrico", 
     type: "opportunity",
     email_from: formData.email_cliente || "",
     phone: formData.telefono_cliente || "",
@@ -118,7 +119,7 @@ const leadPayload = {
     
     x_studio_menos_3_meses: mapSiNo[formData.menos_3_meses] || formData.menos_3_meses,
     x_studio_menos_6_meses: mapSiNo[formData.menos_6_meses] || formData.menos_6_meses,
-    x_studio_modo_de_contacto: formData.metodo_contacto
+    x_studio_modo_de_contacto: mapModo[formData.metodo_contacto] || formData.metodo_contacto
 };
 
         try {
