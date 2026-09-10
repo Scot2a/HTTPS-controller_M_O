@@ -167,7 +167,7 @@ module.exports = async function handler(req, res) {
             console.error("[VERCEL LOG] Error en data_exchange:", error.message);
             responseData = {
                 version: "3.0",
-                screen: "SCREEN_EIG", 
+                screen: "SCREEN_TEN", 
                 data: { error_msg: "Hubo un problema registrando tu solicitud. Intenta de nuevo." }
             };
         }
