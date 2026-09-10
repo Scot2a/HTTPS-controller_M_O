@@ -107,7 +107,11 @@ module.exports = async function handler(req, res) {
 
       if (!response.ok) throw new Error(`Fallo HTTP: ${response.status}`);
       const data = await response.json();
-      if (data.error) throw new Error('Odoo rechazó los campos.');
+      if (data.error) {
+        const odooDebug = data.error.data ? data.error.data.message : "Error desconocido";
+        console.error("[VERCEL LOG] Traceback completo de Odoo:", JSON.stringify(data.error));
+        throw new Error(`Odoo rechazó la estructura. Causa: ${odooDebug}`);
+    };
       
       return data.result;
     }
