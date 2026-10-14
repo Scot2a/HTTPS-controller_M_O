@@ -34,17 +34,18 @@ module.exports = async function handler(req, res) {
       console.error('[VERCEL LOG] Error: Faltan parámetros obligatorios (phone o plantilla). Payload:', payload);
       return res.status(400).json({ error: 'Faltan parámetros obligatorios: se requiere el teléfono y la plantilla asignada.' });
     }
-    
+
     let templateComponents = payload.components || [];
     if (templateComponents.length === 0 && payload.x_studio_lead_name) {
       const leadName = payload.x_studio_lead_name.trim();
       templateComponents = [
         {
-          type: 'header',
+          type: 'body', // ⚠️ Importante: Cambiado a 'body' porque la variable está en el texto del mensaje
           parameters: [
             {
               type: 'text',
-              text: leadName
+              parameter_name: 'order_id', //  El nombre exacto de la variable que Meta leyó en tu plantilla
+              text: leadName // El valor que viene desde Odoo (nombre del lead)
             }
           ]
         }
