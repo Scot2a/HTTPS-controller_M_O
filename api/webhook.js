@@ -1,6 +1,7 @@
 const { verifyMetaSignature } = require('../lib/verify_meta');
 const { sendTextMessage, sendFlowMessage } = require('../lib/meta_client');
 const { generateSafeResponse } = require('../lib/ai_service');
+const { notifyHumanAgent } = require('../lib/handover_service');
 
 // IMPORTANTE: Desactivar el body parser automático de Vercel para capturar el buffer crudo (Raw Body)
 export const config = {
@@ -79,6 +80,9 @@ module.exports = async function handler(req, res) {
     const messageType = message.type;
 
     // 3. PROCESAMIENTO DE MENSAJES ENTRANTES DE TEXTO
+    
+    
+
     if (messageType === 'text') {
       const userText = message.text.body.trim();
       const lowerText = userText.toLowerCase();
@@ -96,6 +100,7 @@ module.exports = async function handler(req, res) {
       } 
       else if (lowerText.includes('asesor') || lowerText.includes('humano') || lowerText.includes('ayuda')) {
         await sendTextMessage(fromPhone, "Entendido. He notificado a nuestro equipo de especialistas para que un asesor humano se comunique contigo a la brevedad.");
+        await notifyHumanAgent(fromPhone, {}, userText);
       } 
       else {
         // RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI 1.5 FLASH
