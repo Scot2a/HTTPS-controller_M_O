@@ -86,6 +86,7 @@ module.exports = async function handler(req, res) {
     if (messageType === 'text') {
       const userText = message.text.body.trim();
       const lowerText = userText.toLowerCase();
+      const formData = responseJson;
 
       // ACTIVACIÓN DE FLOW VÍA PALABRA CLAVE
       if (lowerText.includes('renovar') || lowerText.includes('evaluar') || lowerText.includes('formulario')) {
@@ -100,7 +101,7 @@ module.exports = async function handler(req, res) {
       } 
       else if (lowerText.includes('asesor') || lowerText.includes('humano') || lowerText.includes('ayuda')) {
         await sendTextMessage(fromPhone, "Entendido. He notificado a nuestro equipo de especialistas para que un asesor humano se comunique contigo a la brevedad.");
-        await notifyHumanAgent(fromPhone, {}, userText);
+        await notifyHumanAgent(fromPhone, formData, {}, userText);
       } 
       else {
         // RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI 1.5 FLASH
