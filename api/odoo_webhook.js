@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
     
     // Mapeamos el nombre de la plantilla al campo personalizado de Odoo que mencionas
     const templateName = payload.x_studio_wha_plantillas || payload.template_name; 
-    const languageCode = payload.language_code || 'es';
+    const languageCode = payload.language_code || 'es_ES';
     const templateComponents = payload.components || [];
 
     if (!recipientPhone || !templateName) {
