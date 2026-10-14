@@ -79,11 +79,14 @@ module.exports = async function handler(req, res) {
     const fromPhone = message.from;
     const messageType = message.type;
 
-    // 3. PROCESAMIENTO DE MENSAJES ENTRANTES SEGÚN SU TIPO
+    // 3. PROCESAMIENTO DE MENSAJES ENTRANTES DE TEXTO
     
+    
+
     if (messageType === 'text') {
       const userText = message.text.body.trim();
       const lowerText = userText.toLowerCase();
+      
 
       // ACTIVACIÓN DE FLOW VÍA PALABRA CLAVE
       if (lowerText.includes('renovar') || lowerText.includes('evaluar') || lowerText.includes('formulario')) {
@@ -98,27 +101,12 @@ module.exports = async function handler(req, res) {
       } 
       else if (lowerText.includes('asesor') || lowerText.includes('humano') || lowerText.includes('ayuda')) {
         await sendTextMessage(fromPhone, "Entendido. He notificado a nuestro equipo de especialistas para que un asesor humano se comunique contigo a la brevedad.");
-        // Llamada limpia para derivación anónima con el último mensaje
         await notifyHumanAgent(fromPhone, {}, userText);
-      }
+      } 
       else {
-        // RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI (CON FALLBACK)
+        // RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI 1.5 FLASH
         const aiReply = await generateSafeResponse(userText, {});
         await sendTextMessage(fromPhone, aiReply);
-      }
-    } 
-    else if (messageType === 'interactive') {
-      const interactive = message.interactive;
-
-      // Procesamiento de la respuesta del WhatsApp Flow (nfm_reply)
-      if (interactive.type === 'nfm_reply') {
-        const rawResponse = interactive.nfm_reply.response_json;
-        const responseJson = rawResponse ? JSON.parse(rawResponse) : {};
-
-        console.log("[VERCEL LOG] Datos recibidos del Flow:", responseJson);
-
-        // Opcional: Si quieres notificar al asesor humano con los datos del formulario completado:
-        // await notifyHumanAgent(fromPhone, responseJson, "Formulario de renovación completado");
       }
     }
 
