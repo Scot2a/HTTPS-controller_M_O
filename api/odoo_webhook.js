@@ -14,7 +14,7 @@ module.exports = async function handler(req, res) {
   try {
     // 1. Validación de seguridad con el token
     const odooSecret = req.headers['x-odoo-secret'] || req.query.secret;
-    if (process.env.META_VERIFY_TOKEN && odooSecret !== process.env.META_VERIFY_TOKEN) {
+    if (process.env.ODOO_WEBHOOK_SECRET && odooSecret !== process.env.ODOO_WEBHOOK_SECRET) {
       console.error('[VERCEL LOG] Alerta: Intento de acceso no autorizado al webhook de Odoo.');
       return res.status(401).json({ error: 'Unauthorized' });
     }
