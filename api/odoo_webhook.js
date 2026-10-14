@@ -35,12 +35,28 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ error: 'Faltan parámetros obligatorios: se requiere el teléfono y la plantilla asignada.' });
     }
 
+    // Usamos 'let' para permitir la reasignación del array de componentes
     let templateComponents = payload.components || [];
+    
     if (templateComponents.length === 0 && payload.x_studio_lead_name) {
       const leadName = payload.x_studio_lead_name.trim();
       
-      // Solo inyectamos el parámetro si la plantilla es 'cae_no_calificado' (que es la que usa {{order_id}})
-      if (templateName === 'cae_no_calificado') {
+      if (templateName === 'cae_calificado') {
+        // CAE Calificado lleva el parámetro en el HEADER
+        templateComponents = [
+          {
+            type: 'header',
+            parameters: [
+              {
+                type: 'text',
+                parameter_name: 'order_id',
+                text: leadName
+              }
+            ]
+          }
+        ];
+      } else if (templateName === 'cae_no_calificado') {
+        // CAE No Calificado lleva el parámetro en el BODY
         templateComponents = [
           {
             type: 'body',
@@ -54,7 +70,6 @@ module.exports = async function handler(req, res) {
           }
         ];
       }
-      // Si la plantilla es 'cae_calificado', se queda con templateComponents = [] porque espera 0 parámetros
     }
 
     // Despacho de la plantilla a través de Meta
