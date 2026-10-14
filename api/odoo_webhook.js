@@ -34,7 +34,8 @@ module.exports = async function handler(req, res) {
       console.error('[VERCEL LOG] Error: Faltan parámetros obligatorios (phone o plantilla). Payload:', payload);
       return res.status(400).json({ error: 'Faltan parámetros obligatorios: se requiere el teléfono y la plantilla asignada.' });
     }
-    const templateComponents = payload.components || [];
+    
+    let templateComponents = payload.components || [];
     if (templateComponents.length === 0 && payload.x_studio_lead_name) {
       const leadName = payload.x_studio_lead_name.trim();
       templateComponents = [
