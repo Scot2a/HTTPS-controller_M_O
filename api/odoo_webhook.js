@@ -38,18 +38,23 @@ module.exports = async function handler(req, res) {
     let templateComponents = payload.components || [];
     if (templateComponents.length === 0 && payload.x_studio_lead_name) {
       const leadName = payload.x_studio_lead_name.trim();
-      templateComponents = [
-        {
-          type: 'body', // ⚠️ Importante: Cambiado a 'body' porque la variable está en el texto del mensaje
-          parameters: [
-            {
-              type: 'text',
-              parameter_name: 'order_id', //  El nombre exacto de la variable que Meta leyó en tu plantilla
-              text: leadName // El valor que viene desde Odoo (nombre del lead)
-            }
-          ]
-        }
-      ];
+      
+      // Solo inyectamos el parámetro si la plantilla es 'cae_no_calificado' (que es la que usa {{order_id}})
+      if (templateName === 'cae_no_calificado') {
+        templateComponents = [
+          {
+            type: 'body',
+            parameters: [
+              {
+                type: 'text',
+                parameter_name: 'order_id',
+                text: leadName
+              }
+            ]
+          }
+        ];
+      }
+      // Si la plantilla es 'cae_calificado', se queda con templateComponents = [] porque espera 0 parámetros
     }
 
     // Despacho de la plantilla a través de Meta
