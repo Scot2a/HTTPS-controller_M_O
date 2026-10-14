@@ -29,11 +29,25 @@ module.exports = async function handler(req, res) {
     // Mapeamos el nombre de la plantilla al campo personalizado de Odoo que mencionas
     const templateName = payload.x_studio_wha_plantillas || payload.template_name; 
     const languageCode = payload.language_code || 'es_ES';
-    const templateComponents = payload.components || [];
 
     if (!recipientPhone || !templateName) {
       console.error('[VERCEL LOG] Error: Faltan parámetros obligatorios (phone o plantilla). Payload:', payload);
       return res.status(400).json({ error: 'Faltan parámetros obligatorios: se requiere el teléfono y la plantilla asignada.' });
+    }
+    const templateComponents = payload.components || [];
+    if (templateComponents.length === 0 && payload.x_studio_lead_name) {
+      const leadName = payload.x_studio_lead_name.trim();
+      templateComponents = [
+        {
+          type: 'header',
+          parameters: [
+            {
+              type: 'text',
+              text: leadName
+            }
+          ]
+        }
+      ];
     }
 
     // Despacho de la plantilla a través de Meta
