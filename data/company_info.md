@@ -72,6 +72,10 @@ Si el lead no cumple los requisitos para el CAE actual de sustitución de vehíc
 
 - **¿Hay otros requisitos especiales con los que deba cumplir?**  
   Las categorías que aplican para la oferta son vehículos categoría M1 y N1. Además, los reemplazos de vehículo nuevo y antiguo deberán ser de la misma categoría.
+
+- **¿Por qué no califico para la ayuda? / ¿Por qué no califico para el CAE?**  
+  Si no has calificado por lo general se debe al incumplimiento de alguno de los estrictos criterios que exige el Ministerio para la Transición Ecológica. Entre estos puede estar que el titular del vehículo de combustión antiguo no coincide exactamente con el titular que compró y puso a su nombre el nuevo vehículo eléctrico, que no hayas tenido la titularidad ininterrumpida del vehículo de combustión anterior por lo menos más de 1 año, que el vehículo nuevo no sea 100% eléctrico, que haya problemas con la baja o venta del vehículo antiguo o que te encuentres fuera del marco temporal permitido.
+
 ---
 
 ## 6. Restricciones, Guardrails y Escalación
