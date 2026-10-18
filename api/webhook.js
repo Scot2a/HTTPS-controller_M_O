@@ -78,6 +78,7 @@ module.exports = async function handler(req, res) {
 
     const fromPhone = message.from;
     const messageType = message.type;
+    const { getChatHistory, saveChatHistory } = require('../lib/redis_client'); // Importamos Redis
 
     // 3. PROCESAMIENTO DE MENSAJES ENTRANTES DE TEXTO
     
@@ -95,8 +96,8 @@ module.exports = async function handler(req, res) {
           process.env.META_FLOW_ID,
           `token_${fromPhone}_${Date.now()}`,
           "Renovación de Vehículo",
-          "Completa el siguiente formulario para evaluar la elegibilidad de tu renovación de movilidad.",
-          "Iniciar Formulario"
+          "Queremos comprobar en un par de minutos si cumples con los requisitos para gestionar tu incentivo económico. Haz clic en el botón de abajo para iniciar el formulario de verificación rápida 👇",
+          "Iniciar formulario CAE"
         );
       } 
       else if (lowerText.includes('asesor') || lowerText.includes('humano') || lowerText.includes('ayuda')) {
@@ -104,9 +105,16 @@ module.exports = async function handler(req, res) {
         await notifyHumanAgent(fromPhone, {}, userText);
       } 
       else {
-        // RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI 1.5 FLASH
-        const aiReply = await generateSafeResponse(userText, {});
+        // RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI 
+        // obtenemos memoria desde redis
+        const history = await getChatHistory(fromPhone);
+        // ajustamos la respuesta automatica
+        const aiReply = await generateSafeResponse(userText, history, {});
         await sendTextMessage(fromPhone, aiReply);
+
+        history.push({role: 'user', content: userText});
+        history.push({role: 'model', content: aiReply});
+        await saveChatHistory(fromPhone, history);
       }
     }
 

@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@ai-sdk/google": "^4.0.87",
+    "@upstash/redis": "^1.39.0",
     "ai": "^7.0.127",
     "zod": "^4.6.5"
   }

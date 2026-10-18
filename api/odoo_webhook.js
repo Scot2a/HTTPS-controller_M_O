@@ -22,8 +22,6 @@ module.exports = async function handler(req, res) {
     const payload = req.body;
     console.log("[VERCEL LOG] Solicitud de plantilla recibida desde Odoo:", JSON.stringify(payload));
 
-    // 2. Extracción de datos adaptada a los campos reales de Odoo
-    // Asegúrate de que Odoo envíe el teléfono en alguna de estas llaves (ej. phone, mobile, partner_phone)
     const recipientPhone = payload.phone || payload.mobile || payload.partner_phone;
     
     // Mapeamos el nombre de la plantilla al campo personalizado de Odoo que mencionas
