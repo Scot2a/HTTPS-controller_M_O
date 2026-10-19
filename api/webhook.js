@@ -2,6 +2,7 @@ const { verifyMetaSignature } = require('../lib/verify_meta');
 const { sendTextMessage, sendFlowMessage } = require('../lib/meta_client');
 const { generateSafeResponse } = require('../lib/ai_service');
 const { notifyHumanAgent } = require('../lib/handover_service');
+const { getChatHistory, saveChatHistory } = require('../lib/redis_client'); // 👈 Importamos Redis arriba para tenerlo disponible en todo el handler
 
 // IMPORTANTE: Desactivar el body parser automático de Vercel para capturar el buffer crudo (Raw Body)
 export const config = {
@@ -78,19 +79,31 @@ module.exports = async function handler(req, res) {
 
     const fromPhone = message.from;
     const messageType = message.type;
-    const { getChatHistory, saveChatHistory } = require('../lib/redis_client'); // Importamos Redis
 
     // 3. PROCESAMIENTO DE MENSAJES ENTRANTES DE TEXTO
-    
-    
-
     if (messageType === 'text') {
       const userText = message.text.body.trim();
       const lowerText = userText.toLowerCase();
-      
 
-      // ACTIVACIÓN DE FLOW VÍA PALABRA CLAVE
-      if (lowerText.includes('renovar') || lowerText.includes('evaluar') || lowerText.includes('formulario')) {
+      // OBTENEMOS LA MEMORIA DE REDIS AL INICIO PARA ANALIZAR CONTEXTO
+      const history = await getChatHistory(fromPhone);
+
+      // Validaciones para respuestas afirmativas contextuales ("sí", "claro", etc.)
+      const affirmativeWords = ['sí', 'si', 'claro', 'por favor', 'ok', 'dale', 'perfecto', 'bueno'];
+      const isAffirmative = affirmativeWords.some(word => lowerText === word || lowerText.startsWith(word + ' '));
+
+      // Verificamos si el último mensaje del bot ofrecía el formulario/evaluación
+      const lastAssistantMsg = history.slice().reverse().find(msg => msg.role === 'model')?.content?.toLowerCase() || '';
+      const isOfferingForm = lastAssistantMsg.includes('formulario') || lastAssistantMsg.includes('evaluar') || lastAssistantMsg.includes('requisitos') || lastAssistantMsg.includes('incentivo');
+
+      // A. ACTIVACIÓN DE FLOW (Por palabras clave directas O por un "Sí" contextual)
+      if (
+        lowerText.includes('renovar') || 
+        lowerText.includes('evaluar') || 
+        lowerText.includes('formulario') ||
+        lowerText.includes('aplicar') ||
+        (isAffirmative && isOfferingForm)
+      ) {
         await sendFlowMessage(
           fromPhone,
           process.env.META_FLOW_ID,
@@ -99,21 +112,36 @@ module.exports = async function handler(req, res) {
           "Queremos comprobar en un par de minutos si cumples con los requisitos para gestionar tu incentivo económico. Haz clic en el botón de abajo para iniciar el formulario de verificación rápida 👇",
           "Iniciar formulario CAE"
         );
+
+        // Guardamos el evento en el historial de Redis
+        history.push({ role: 'user', content: userText });
+        history.push({ role: 'model', content: '[Sistema: Se ha enviado el WhatsApp Flow interactivo al usuario]' });
+        await saveChatHistory(fromPhone, history);
       } 
-      else if (lowerText.includes('asesor') || lowerText.includes('humano') || lowerText.includes('ayuda')) {
+      // B. ACTIVACIÓN DE ASESOR HUMANO (Filtro estricto para evitar falsos positivos con "ayuda")
+      else if (
+        lowerText.includes('asesor') || 
+        lowerText.includes('humano') || 
+        lowerText === 'ayuda' || 
+        lowerText.includes('necesito ayuda') || 
+        lowerText.includes('hablar con')
+      ) {
         await sendTextMessage(fromPhone, "Entendido. He notificado a nuestro equipo de especialistas para que un asesor humano se comunique contigo a la brevedad.");
         await notifyHumanAgent(fromPhone, {}, userText);
+
+        // Guardamos la interacción en Redis
+        history.push({ role: 'user', content: userText });
+        history.push({ role: 'model', content: 'Entendido. He notificado a nuestro equipo de especialistas...' });
+        await saveChatHistory(fromPhone, history);
       } 
+      // C. RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI CON HISTORIAL Y CONTEXTO
       else {
-        // RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI 
-        // obtenemos memoria desde redis
-        const history = await getChatHistory(fromPhone);
-        // ajustamos la respuesta automatica
         const aiReply = await generateSafeResponse(userText, history, {});
         await sendTextMessage(fromPhone, aiReply);
 
-        history.push({role: 'user', content: userText});
-        history.push({role: 'model', content: aiReply});
+        // Actualizamos y guardamos el historial actualizado en Redis
+        history.push({ role: 'user', content: userText });
+        history.push({ role: 'model', content: aiReply });
         await saveChatHistory(fromPhone, history);
       }
     }
