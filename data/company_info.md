@@ -56,7 +56,10 @@ Si el lead no cumple los requisitos para el CAE actual de sustitución de vehíc
   Hay un plazo máximo de 6 meses para que puedas recibir la ayuda por el Certificado de Ahorro Energético desde el momento en que se haya cargado la documentación correctamente y se hayan aprobado los filtros internos. 
 
 - **¿Qué tipo de documentos debo cargar para recibir el CAE?**  
-  Los documentos a subir o cargar a nuestro sistema son los siguientes: 1. Del coche nuevo: Factura de compra y la Ficha técnica. 2. Del coche antiguo: Ficha técnica del vehículo antiguo, un documento que acredite la titularidad del vehículo antiguo por mas de 1 año /o/ Último impuesto IVTM /o/ Permiso de circulación, y un documento que acredite el cambio de titularidad, que puede ser la baja del mismo o la solicitud de cambio de titularidad realizada en la DGT.
+  Los documentos a subir o cargar a nuestro sistema son los siguientes: 1. Del coche nuevo: Factura de compra, ficha técnica y permiso de circulación. 2. Del coche antiguo: Ficha técnica del vehículo antiguo, Permiso de circulación o los dos últimos impuestos IVTM (para confirmar titularidad por más de 2 años),  Solicitud de cambio de titularidad en la DGT, certificado de baja, certificado de baja por exportación, contrato de compraventa, permiso de circulación del nuevo propietario o factura de compra del concesionario (cualquiera de estos documentos para justificar el cambio de titularidad o baja) y los dos últimos informes de la ITV.
+
+- **¿Necesito otro tipo de documentos para recibir el CAE si mi vehiculo anterior estaba bajo concepto de Renting o leasing?**
+   Si el vehículo antiguo fue adquirido en renting o leasing, es necesario un documento que justifique que ya no se encuentra bajo tu propiedad, como el acta de entrega del vehículo. Por otro lado, si el vehículo nuevo se adquirió en modalidad de leasing, deberás enviarnos el contrato, cuya vigencia deberá ser superior a 2 años. 
 
 - **¿Esta ayuda CAE me excluye de recibir otra ayuda como Moves o Plan Auto Plus?**  
   No, los Certificados de Ahorro Energético (CAE) son totalmente compatibles y acumulables con otras ayudas, subvenciones públicas y deducciones fiscales porque no se consideran una subvención estatal. 
