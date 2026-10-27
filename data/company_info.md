@@ -47,7 +47,7 @@ Si el lead no cumple los requisitos para el CAE actual de sustitución de vehíc
   Ser persona particular en España, haber cambiado un vehículo de combustión por uno 100% eléctrico o híbrido enchufable, y tener la documentación/titularidad a tu nombre.
 
 - **¿Cuánto dinero me corresponde por mi cambio de coche?**  
-  El importe varía según las especificaciones técnicas del vehículo y la energía ahorrada calculada por la norma. Por política de la empresa, el bot no promete cifras exactas; la liquidación final la confirma nuestro equipo técnico tras revisar la documentación.
+  El importe varía según las especificaciones técnicas del vehículo y la fecha de cambio del mismo (térmico a eléctrico). Por  lo general, se puede llegar a obtener desde €700 hasta €1.000, con impuestos incluidos.
 
 - **No completé el formulario a tiempo o pasaron más de 24 horas, ¿puedo volver a intentarlo?**  
   ¡Sí! Solo pídeme el formulario de nuevo en este chat y te enviaré el enlace/Flow actualizado para que ingreses tus datos en un par de minutos.
@@ -60,6 +60,15 @@ Si el lead no cumple los requisitos para el CAE actual de sustitución de vehíc
 
 - **¿Necesito otro tipo de documentos para recibir el CAE si mi vehículo anterior estaba bajo concepto de Renting o leasing?**
    Si el vehículo antiguo fue adquirido en renting o leasing, es necesario un documento que justifique que ya no se encuentra bajo su propiedad, como el acta de entrega del vehículo. Por otro lado, si el vehículo nuevo se adquirió en modalidad de leasing, deberás enviarnos el contrato, cuya vigencia deberá ser superior a 2 años. 
+
+- **¿Puedo solicitar el ahorro CAE si no tengo / poseo DNI?**  
+  Si eres extranjero y no posees un DNI, puedes usar tu NIE para solicitar el ahorro. Cualquier trámite administrativo oficial ante los organismos de España (como la emisión o registro de un Certificado de Ahorro Energético) exige por ley un número de identificación fiscal válido en el país. Sin uno de estos dos documentos, nuestras plataformas informáticas y los sistemas de validación del ministerio o de las comunidades autónomas rechazan la tramitación a nombre de una persona natural.
+
+- **¿Puedo solicitar el CAE si soy una empresa?**  
+  ¡Sí! El ahorro CAE por cambio o reemplazo de vehículo de combustión a uno eléctrico se basa en la ficha TRA050, la cual tiene una variante para la sustitución de vehículo realizada por empresas, que es la TRA050P. Ten en cuenta que para solicitar este ahorro específico debe existir una sustituir real de un vehículo antiguo de combustión o híbrido por un vehículo eléctrico puro (100% eléctrico). No aplican los vehículos híbridos enchufables (PHEV) ni los híbridos convencionales (HEV). Para esto necesitarias un CIF o un NIF de persona jurídica para así poder acreditar la titularidad, además de otros documentos esenciales. 
+
+- **Como empresa, ¿qué tipo de documentación necesito para solicitar el ahorro CAE por sustitución de vehículo de combustión a eléctrico?**  
+  La documentación que una empresa debe presentar implica la adición de documentos de acreditación societaria y representación legal, además de aquellos comunes con los requeridos por la TRA050P. Entre estos se encuentran: El NIF o CIF de la empresa. La escritura de constitución y poderes de representación. El DNI del representante legal que firma en representación de la empresa. Además de eso, se debe asegurar que el permiso de circulación del vehículo antiguo y del nuevo refleje correctamente los datos de la razón social de la empresa. Ten en cuenta que en gestiones de flotas complejas, las comercializadores o sujetos delegados pueden requerir informes internos de la plataforma de gestión de flotas o trazabilidad del uso de los vehículos.
 
 - **¿Esta ayuda CAE me excluye de recibir otra ayuda como Moves o Plan Auto Plus?**  
   No, los Certificados de Ahorro Energético (CAE) son totalmente compatibles y acumulables con otras ayudas, subvenciones públicas y deducciones fiscales porque no se consideran una subvención estatal. 
@@ -77,13 +86,12 @@ Si el lead no cumple los requisitos para el CAE actual de sustitución de vehíc
   Las categorías que aplican para la oferta son vehículos categoría M1 y N1. Además, los reemplazos de vehículo nuevo y antiguo deberán ser de la misma categoría.
 
 - **¿Por qué no califico para la ayuda? / ¿Por qué no califico para el CAE?**  
-  Si no has calificado por lo general se debe al incumplimiento de alguno de los estrictos criterios que exige el Ministerio para la Transición Ecológica. Entre estos puede estar que el titular del vehículo de combustión antiguo no coincide exactamente con el titular que compró y puso a su nombre el nuevo vehículo eléctrico, que no hayas tenido la titularidad ininterrumpida del vehículo de combustión anterior por lo menos más de 1 año, que el vehículo nuevo no sea 100% eléctrico, que haya problemas con la baja o venta del vehículo antiguo o que te encuentres fuera del marco temporal permitido.
+  Si no has calificado por lo general se debe al incumplimiento de alguno de los estrictos criterios que exige el Ministerio para la Transición Ecológica. Entre estos puede estar que el titular del vehículo de combustión antiguo no coincide exactamente con el titular que compró y puso a su nombre el nuevo vehículo eléctrico, que no hayas tenido la titularidad ininterrumpida del vehículo de combustión anterior por lo menos más de 2 años, que el vehículo nuevo no sea 100% eléctrico, que haya problemas con la baja o venta del vehículo antiguo o que te encuentres fuera del marco temporal permitido.
 
 ---
 
 ## 6. Restricciones, Guardrails y Escalación
 - **Prohibido Alucinar / Inventar:** Si el usuario realiza preguntas técnicas profundas, legales, sobre otras campañas no activas o casos complejos fuera de esta base de conocimiento, **el bot NUNCA debe inventar una respuesta**.
-- **Derivación a Agente Humano:** Ante dudas complejas, errores en el formulario o situaciones no contempladas, el bot responderá:  
-  > *"Para darte la información exacta sobre tu caso, voy a transferir tu consulta a uno de nuestros asesores especializados de Uflou.tech."*
+- **Derivación a Agente Humano:** Ante dudas complejas, errores en el formulario, situaciones no contempladas o necesidades de ayuda específicas, el bot solicitará el número de contacto del cliente, y su nombre completo para luego transferir la consulta al asesor humano registrado bajo la variable "ADVISOR_PHONE_NUMBER" en el directorio "../lib/handover_service.js".
 - **Límites Financieros:** Nunca prometer montos garantizados antes de la validación técnica excepto por aquellos estipulados en la documentación.
 - **Tono:** Profesional, ágil, transparente y seguro.
