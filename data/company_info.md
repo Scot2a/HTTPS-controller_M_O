@@ -7,10 +7,10 @@
 
 ---
 
-## 2. Campaña Activa: CAE Movilidad (Ficha TRA 050)
+## 2. Campaña Activa: CAE Movilidad (Ficha TRA050)
 - **Objetivo:** Certificar el ahorro energético obtenido por el cambio de un vehículo de combustión tradicional (gasolina/diésel) a un vehículo 100% eléctrico (EV) o híbrido enchufable (PHEV).
 - **Alcance Geográfico Actual:** España (con planes de expansión activa hacia el resto de la Unión Europea y EE. UU.).
-- **Público Objetivo:** Personas naturales / particulares que ya hayan realizado la compra o sustitución de su vehículo y tengan la titularidad del mismo.
+- **Público Objetivo:** Personas naturales / particulares que ya hayan realizado la compra o sustitución de su vehículo y tengan la titularidad del mismo (Ficha TRA050P). Empresas / personas jurídicas que hayan realizado la sustitución de vehículo de combustión a eléctrico, o de una flota (TRA050E); además de otras entidades como: sociedades mercantiles, autónomos y profesionales por cuenta propia (Siempre y cuando el vehículo esté afecto a su actividad económica), Entidades públicas y administraciones, Fundaciones, asociaciones, cooperativas u organizaciones sin ánimo de lucro que posean vehículos destinados a sus actividades operativas. 
 
 ---
 
@@ -30,8 +30,8 @@
 ---
 
 ## 4. Gestión de Leads Descalificados (Estrategia de Reciclaje)
-Si el lead no cumple los requisitos para el CAE actual de sustitución de vehículo (TRA 050):
-1. **No se descarta definitivamente:** Se registra en la base de datos como "Lead No Cualificado - Campaña TRA 050".
+Si el lead no cumple los requisitos para el CAE actual de sustitución de vehículo (TRA050):
+1. **No se descarta definitivamente:** Se registra en la base de datos como "Lead No Cualificado - Campaña TRA050".
 2. **Explicación transparente:** Se le informa amablemente que no cumple los requisitos para la ayuda de cambio de vehículo actual.
 3. **Alternativas futuras:** Se le indica que su perfil ha sido guardado para futuras campañas de eficiencia energética (ej. sustitución de neumáticos, parkings eficientes, cambio de piezas, híbridos no enchufables, etc.).
 4. **Puerta abierta:** Se le invita a ponerse en contacto de nuevo si en el futuro adquiere un vehículo eléctrico/híbrido enchufable.
@@ -43,7 +43,7 @@ Si el lead no cumple los requisitos para el CAE actual de sustitución de vehíc
 - **¿Qué es un Certificado de Ahorro Energético (CAE)?**  
   Es un documento oficial que acredita la cantidad de energía ahorrada tras realizar una acción sostenible (como cambiar tu coche a uno eléctrico). Las energéticas obligadas por ley (como Repsol) compran estos certificados, lo que nos permite darte una compensación económica a ti.
 
-- **¿Qué necesito para calificar en la campaña TRA 050?**  
+- **¿Qué necesito para calificar en la campaña TRA050?**  
   Ser persona particular en España, haber cambiado un vehículo de combustión por uno 100% eléctrico o híbrido enchufable, y tener la documentación/titularidad a tu nombre.
 
 - **¿Cuánto dinero me corresponde por mi cambio de coche?**  
