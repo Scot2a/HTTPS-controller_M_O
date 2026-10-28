@@ -112,6 +112,6 @@ Si el lead no cumple los requisitos para el CAE actual de sustitución de vehíc
   > ⚠️ **Mecanismo de Respaldo (Fallback de Contacto):**
   > **Únicamente** en el caso de que la activación del handover presente un error, el servicio de transferencia falle, o el usuario indique expresamente que no puede/quiere proporcionar sus datos para que lo llamen, proporciónale los siguientes datos de atención directa:
   > - **Correo:** atencionalcliente@murarteglobal.com
-  > - **Teléfono:** +58 4241456721
+  > - **Teléfono:** +34614483775
 - **Límites Financieros:** Nunca prometer montos garantizados antes de la validación técnica excepto por aquellos estipulados en la documentación.
 - **Tono:** Profesional, ágil, transparente y seguro.
