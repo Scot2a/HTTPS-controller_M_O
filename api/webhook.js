@@ -137,11 +137,23 @@ module.exports = async function handler(req, res) {
       // C. RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI CON HISTORIAL Y CONTEXTO
       else {
         const aiReply = await generateSafeResponse(userText, history, {});
-        await sendTextMessage(fromPhone, aiReply);
+        if (aiReply.includes('[TRIGGER_HANDOVER]')) {
+          // 1. Limpiamos la etiqueta para que el usuario final no la vea
+          finalReplyForUser = aiReply.replace('[TRIGGER_HANDOVER]', '').trim();
+          await sendTextMessage(fromPhone, finalReplyForUser);
 
-        // Actualizamos y guardamos el historial actualizado en Redis
+          // 2. DISPARAMOS EL HANDOVER REAL AL ASESOR
+          await notifyHumanAgent(fromPhone, {}, userText);
+
+          console.log('[VERCEL LOG] Handover humano activado automáticamente por Gemini.');
+        } else {
+          // Si es una respuesta normal de Q&A
+          await sendTextMessage(fromPhone, aiReply);
+        }
+
+        // 3. Actualizamos y guardamos el historial limpio en Redis
         history.push({ role: 'user', content: userText });
-        history.push({ role: 'model', content: aiReply });
+        history.push({ role: 'model', content: finalReplyForUser });
         await saveChatHistory(fromPhone, history);
       }
     }
