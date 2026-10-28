@@ -2,9 +2,8 @@ const { verifyMetaSignature } = require('../lib/verify_meta');
 const { sendTextMessage, sendFlowMessage } = require('../lib/meta_client');
 const { generateSafeResponse } = require('../lib/ai_service');
 const { notifyHumanAgent } = require('../lib/handover_service');
-const { getChatHistory, saveChatHistory } = require('../lib/redis_client'); // 👈 Importamos Redis arriba para tenerlo disponible en todo el handler
+const { getChatHistory, saveChatHistory } = require('../lib/redis_client');
 
-// IMPORTANTE: Desactivar el body parser automático de Vercel para capturar el buffer crudo (Raw Body)
 export const config = {
   api: {
     bodyParser: false,
@@ -137,6 +136,7 @@ module.exports = async function handler(req, res) {
       // C. RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI CON HISTORIAL Y CONTEXTO
       else {
         const aiReply = await generateSafeResponse(userText, history, {});
+        let finalReplyForUser =aiReply;
         if (aiReply.includes('[TRIGGER_HANDOVER]')) {
           // 1. Limpiamos la etiqueta para que el usuario final no la vea
           finalReplyForUser = aiReply.replace('[TRIGGER_HANDOVER]', '').trim();
