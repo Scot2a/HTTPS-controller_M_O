@@ -2,10 +2,9 @@ const { verifyMetaSignature } = require('../lib/verify_meta');
 const { sendTextMessage, sendFlowMessage } = require('../lib/meta_client');
 const { generateSafeResponse } = require('../lib/ai_service');
 const { notifyHumanAgent } = require('../lib/handover_service');
-const { getChatSession, saveChatSession } = require('../lib/redis_client'); // 👈 Actualizado a sesiones
-const { updateOdooLead } = require('../lib/odoo_client'); // 👈 Importamos para actualizar Odoo
+const { getChatSession, saveChatSession } = require('../lib/redis_client');
+const { updateOdooLead } = require('../lib/odoo_client');
 
-// IMPORTANTE: Desactivar el body parser automático de Vercel para capturar el buffer crudo (Raw Body)
 export const config = {
   api: {
     bodyParser: false,
@@ -85,32 +84,28 @@ module.exports = async function handler(req, res) {
     const session = await getChatSession(fromPhone);
     let history = session.history;
 
-    // A. MANEJO DE MENSAJES INTERACTIVOS (Botones de Respuesta Rápida: Sí / No de la plantilla de landing)
+    // ----------------------------------------------------
+    // A. DETECCIÓN UNIVERSAL DE CLICS EN BOTONES (Plantillas o Interactivos)
+    // ----------------------------------------------------
     let buttonTitle = '';
-    
     if (messageType === 'interactive' && message.interactive?.type === 'button_reply') {
       buttonTitle = message.interactive.button_reply.title.trim();
     } else if (messageType === 'button') {
-      // Captura los clics provenientes de botones de plantillas de WhatsApp
       buttonTitle = (message.button?.text || message.button?.payload || '').trim();
     }
 
-    // SI SE DETECTÓ UN CLIC EN BOTÓN ("Sí" o "No")
     if (buttonTitle) {
       console.log(`[VERCEL LOG] Botón recibido ('${buttonTitle}') de ${fromPhone}`);
 
-      // 1. Actualizamos en Odoo el campo x_studio_proceso_landing
       if (session.leadId) {
         await updateOdooLead(session.leadId, { x_studio_proceso_landing: buttonTitle });
       }
 
-      // 2. Evaluamos la respuesta
       if (buttonTitle.toLowerCase().includes('sí') || buttonTitle.toLowerCase().includes('si')) {
         await sendTextMessage(fromPhone, "¡Excelente noticia! Nos alegra mucho que hayas podido finalizar tu solicitud con éxito. Si tienes alguna otra duda, aquí estamos para ayudarte.");
         session.state = 'IDLE';
         session.leadId = null; 
       } else {
-        // Si responde "No", pasamos al estado de esperar la razón y extendemos el TTL a 24h
         session.state = 'AWAITING_REASON';
         await sendTextMessage(fromPhone, "¿Cuál fue el motivo por el que no pudiste finalizar el proceso en la landing? Cuéntanos brevemente para que un asesor pueda asistirte.");
       }
@@ -121,7 +116,9 @@ module.exports = async function handler(req, res) {
       return res.status(200).send('EVENT_RECEIVED');
     }
 
-    // B. PROCESAMIENTO DE MENSAJES ENTRANTES DE TEXTO (Resto del código...)
+    // ----------------------------------------------------
+    // B. PROCESAMIENTO DE MENSAJES ENTRANTES DE TEXTO
+    // ----------------------------------------------------
     if (messageType === 'text') {
       const userText = message.text.body.trim();
       const lowerText = userText.toLowerCase();
@@ -148,11 +145,10 @@ module.exports = async function handler(req, res) {
       const affirmativeWords = ['sí', 'si', 'claro', 'por favor', 'ok', 'dale', 'perfecto', 'bueno'];
       const isAffirmative = affirmativeWords.some(word => lowerText === word || lowerText.startsWith(word + ' '));
 
-      // Verificamos si el último mensaje del bot ofrecía el formulario/evaluación
       const lastAssistantMsg = history.slice().reverse().find(msg => msg.role === 'model')?.content?.toLowerCase() || '';
       const isOfferingForm = lastAssistantMsg.includes('formulario') || lastAssistantMsg.includes('evaluar') || lastAssistantMsg.includes('requisitos') || lastAssistantMsg.includes('incentivo');
 
-      // B2. ACTIVACIÓN DE FLOW (Por palabras clave directas O por un "Sí" contextual)
+      // B2. ACTIVACIÓN DE FLOW
       if (
         lowerText.includes('renovar') || 
         lowerText.includes('evaluar') || 
@@ -174,7 +170,7 @@ module.exports = async function handler(req, res) {
         session.history = history;
         await saveChatSession(fromPhone, session);
       } 
-      // B3. ACTIVACIÓN DE ASESOR HUMANO (Filtro estricto)
+      // B3. ACTIVACIÓN DIRECTA DE ASESOR HUMANO (Palabras clave)
       else if (
         lowerText.includes('asesor') || 
         lowerText.includes('humano') || 
@@ -183,14 +179,14 @@ module.exports = async function handler(req, res) {
         lowerText.includes('hablar con')
       ) {
         await sendTextMessage(fromPhone, "Entendido. He notificado a nuestro equipo de especialistas para que un asesor humano se comunique contigo a la brevedad.");
-        await notifyHumanAgent(fromPhone, {}, userText);
+        await notifyHumanAgent(fromPhone, { leadId: session.leadId }, userText);
 
         history.push({ role: 'user', content: userText });
         history.push({ role: 'model', content: 'Entendido. He notificado a nuestro equipo de especialistas...' });
         session.history = history;
         await saveChatSession(fromPhone, session);
       } 
-      // B4. RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI CON HISTORIAL Y CONTEXTO
+      // B4. RESPUESTA AUTOMÁTICA DE Q&A VÍA GEMINI (Con soporte para [TRIGGER_HANDOVER])
       else {
         const aiReply = await generateSafeResponse(userText, history, {});
         let finalReplyForUser = aiReply;
@@ -198,12 +194,12 @@ module.exports = async function handler(req, res) {
         if (aiReply.includes('[TRIGGER_HANDOVER]')) {
           finalReplyForUser = aiReply.replace('[TRIGGER_HANDOVER]', '').trim();
           await sendTextMessage(fromPhone, finalReplyForUser);
-          await notifyHumanAgent(fromPhone, {}, userText);
+          await notifyHumanAgent(fromPhone, { leadId: session.leadId }, userText);
           console.log('[VERCEL LOG] Handover humano activado automáticamente por Gemini.');
         } else {
           await sendTextMessage(fromPhone, aiReply);
         }
-        // 3. Actualizamos y guardamos el historial limpio en Redis
+
         history.push({ role: 'user', content: userText });
         history.push({ role: 'model', content: finalReplyForUser });
         session.history = history;
