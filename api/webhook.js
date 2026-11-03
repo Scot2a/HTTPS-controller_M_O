@@ -86,9 +86,18 @@ module.exports = async function handler(req, res) {
     let history = session.history;
 
     // A. MANEJO DE MENSAJES INTERACTIVOS (Botones de Respuesta Rápida: Sí / No de la plantilla de landing)
+    let buttonTitle = '';
+    
     if (messageType === 'interactive' && message.interactive?.type === 'button_reply') {
-      const buttonTitle = message.interactive.button_reply.title.trim(); // "Sí" o "No"
-      console.log(`[VERCEL LOG] Botón interactivo recibido: ${buttonTitle} de ${fromPhone}`);
+      buttonTitle = message.interactive.button_reply.title.trim();
+    } else if (messageType === 'button') {
+      // Captura los clics provenientes de botones de plantillas de WhatsApp
+      buttonTitle = (message.button?.text || message.button?.payload || '').trim();
+    }
+
+    // SI SE DETECTÓ UN CLIC EN BOTÓN ("Sí" o "No")
+    if (buttonTitle) {
+      console.log(`[VERCEL LOG] Botón recibido ('${buttonTitle}') de ${fromPhone}`);
 
       // 1. Actualizamos en Odoo el campo x_studio_proceso_landing
       if (session.leadId) {
@@ -99,7 +108,7 @@ module.exports = async function handler(req, res) {
       if (buttonTitle.toLowerCase().includes('sí') || buttonTitle.toLowerCase().includes('si')) {
         await sendTextMessage(fromPhone, "¡Excelente noticia! Nos alegra mucho que hayas podido finalizar tu solicitud con éxito. Si tienes alguna otra duda, aquí estamos para ayudarte.");
         session.state = 'IDLE';
-        session.leadId = null; // Limpiamos el lead temporal de seguimiento
+        session.leadId = null; 
       } else {
         // Si responde "No", pasamos al estado de esperar la razón y extendemos el TTL a 24h
         session.state = 'AWAITING_REASON';
@@ -112,23 +121,20 @@ module.exports = async function handler(req, res) {
       return res.status(200).send('EVENT_RECEIVED');
     }
 
-    // B. PROCESAMIENTO DE MENSAJES ENTRANTES DE TEXTO
+    // B. PROCESAMIENTO DE MENSAJES ENTRANTES DE TEXTO (Resto del código...)
     if (messageType === 'text') {
       const userText = message.text.body.trim();
       const lowerText = userText.toLowerCase();
 
       // B1. SI EL USUARIO ESTÁ RESPONDIENDO A LA RAZÓN DEL "NO" (Estado AWAITING_REASON)
       if (session.state === 'AWAITING_REASON') {
-        // 1. Guardamos la razón en Odoo en el campo x_studio_razon_finalizacion_proceso
         if (session.leadId) {
           await updateOdooLead(session.leadId, { x_studio_razon_finalizacion_proceso: userText });
         }
 
-        // 2. Notificamos al asesor humano con el motivo y el teléfono
         await sendTextMessage(fromPhone, "Entendido. He registrado tu motivo y notificado a nuestro equipo de especialistas para que se comuniquen contigo a la brevedad.");
         await notifyHumanAgent(fromPhone, { leadId: session.leadId }, userText);
 
-        // 3. Reseteamos el estado de la sesión
         session.state = 'IDLE';
         session.leadId = null;
         history.push({ role: 'user', content: userText });
